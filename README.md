@@ -1,1 +1,1 @@
-Data_Plots
+Repository with personal data visualization examples 
