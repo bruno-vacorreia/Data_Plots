@@ -1,5 +1,3 @@
-from turtle import width
-
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -53,7 +51,7 @@ if __name__ == "__main__":
     # plt.tight_layout()
     plt.xticks(x_axis, r_sa_data.loc[slice(None), 'Link'], fontsize=6, rotation=60, ha='right')
     plt.yticks(fontsize=6)
-    plt.ylabel('Number of requests')
+    plt.ylabel('Number of allocated traffic (Gbps)')
     plt.legend(fontsize=8)
     plt.title('Use of links')
 
