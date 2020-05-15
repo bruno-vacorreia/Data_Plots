@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from scipy.io import loadmat
 from pathlib import Path
 from gnpy.core.utils import lin2db
-from research.utils.utils import identify_pareto_max, covnert_hz_thz
+from research.utils.utils import identify_pareto_max, hz2thz
 
 sns.set(color_codes=True)
 sns.set(palette="deep", font_scale=1.1, color_codes=True, rc={"figure.figsize": [8, 5]})
@@ -42,9 +42,9 @@ def compare_data():
     # GSNR, SNR_nl and OSNR
     if plot_gsnr:
         plt.figure(1)
-        plt.plot(new_sim['frequencies'][0] / 1e12, 10 * np.log10(new_sim['GSNR'][0]), 'b.', label='GSNR')
-        plt.plot(new_sim['frequencies'][0] / 1e12, 10 * np.log10(new_sim['SNR_NL'][0]), 'g.', label='SNR_nl')
-        plt.plot(new_sim['frequencies'][0] / 1e12, 10 * np.log10(new_sim['OSNR'][0]), 'r.', label='OSNR')
+        plt.plot(hz2thz(new_sim['frequencies'][0]), lin2db(new_sim['GSNR'][0]), 'b.', label='GSNR')
+        plt.plot(hz2thz(new_sim['frequencies'][0]), lin2db(new_sim['SNR_NL'][0]), 'g.', label='SNR_nl')
+        plt.plot(hz2thz(new_sim['frequencies'][0]), lin2db(new_sim['OSNR'][0]), 'r.', label='OSNR')
         plt.title('C+L+S - Single span', fontsize=20)
         plt.ylabel('Power ratio (dB)', fontsize=14)
         plt.xlabel('Frequencies (GHz)', fontsize=14)
@@ -362,8 +362,8 @@ def plot_gsnr():
     """
     Plot of GSNR for channels computed per band, loading from a .npy file
     """
-    path_data = Path('/mnt/Bruno_Data/GoogleDrive/Material_Academico/PoliTo_WON/research/Simulations_Data/Results/'
-                     'JOCN_Power_Optimization/Compare_GSNR')
+    path_data = Path('/mnt/Bruno_Data/GoogleDrive/Material_Academico/PoliTo_WON/Research/Simulations_Data/Results/'
+                     'JOCN_Power_Optimization/C_L_S/Compare_GSNR')
     handles = []
     color_c = 'b'
     color_l = 'r'
@@ -385,12 +385,12 @@ def plot_gsnr():
     freq_c_end = 196.10e12
     gsnr_c = data_c[1]
 
-    h, = plt.plot(freq_c / 1E12, gsnr_c, '.', marker=marker_c, c=color_c, markersize=marker_size,
+    h, = plt.plot(hz2thz(freq_c), gsnr_c, '.', marker=marker_c, c=color_c, markersize=marker_size,
                   label=(name + ' Band GSNR'))
     handles.append(copy.copy(h))
-    plt.axvline(x=freq_c_begin / 1e12, color=color_c)
-    plt.axvline(x=freq_c_end / 1e12, color=color_c)
-    plt.hlines(y=np.mean(gsnr_c), xmin=freq_c_begin / 1e12, xmax=freq_c_end / 1e12, linestyles='dashdot',
+    plt.axvline(x=hz2thz(freq_c_begin), color=color_c)
+    plt.axvline(x=hz2thz(freq_c_end), color=color_c)
+    plt.hlines(y=np.mean(gsnr_c), xmin=hz2thz(freq_c_begin), xmax=hz2thz(freq_c_end), linestyles='dashdot',
                colors=color_c)
 
     # Plot for C+L
@@ -403,15 +403,15 @@ def plot_gsnr():
     gsnr_l_cl = [gsnr for i, gsnr in enumerate(data_cl[1]) if i < len(freq_c)]
     gsnr_c_cl = [gsnr for i, gsnr in enumerate(data_cl[1]) if i >= len(freq_c)]
 
-    h, = plt.plot(freq_l / 1E12, gsnr_l_cl, '.', marker=marker_cl, c=color_l, markersize=marker_size,
+    h, = plt.plot(hz2thz(freq_l), gsnr_l_cl, '.', marker=marker_cl, c=color_l, markersize=marker_size,
                   label=(name + ' Band GSNR'))
-    plt.plot(freq_c / 1E12, gsnr_c_cl, '.', marker=marker_cl, c=color_c, markersize=marker_size)
+    plt.plot(hz2thz(freq_c), gsnr_c_cl, '.', marker=marker_cl, c=color_c, markersize=marker_size)
     handles.append(copy.copy(h))
-    plt.axvline(x=freq_l_begin / 1e12, color=color_l)
-    plt.axvline(x=freq_l_end / 1e12, color=color_l)
-    plt.hlines(y=np.mean(gsnr_c_cl), xmin=freq_c_begin / 1e12, xmax=freq_c_end / 1e12, linestyles='dotted',
+    plt.axvline(x=hz2thz(freq_l_begin), color=color_l)
+    plt.axvline(x=hz2thz(freq_l_end), color=color_l)
+    plt.hlines(y=np.mean(gsnr_c_cl), xmin=hz2thz(freq_c_begin), xmax=hz2thz(freq_c_end), linestyles='dotted',
                colors=color_c)
-    plt.hlines(y=np.mean(gsnr_l_cl), xmin=freq_l_begin / 1e12, xmax=freq_l_end / 1e12, linestyles='dotted',
+    plt.hlines(y=np.mean(gsnr_l_cl), xmin=hz2thz(freq_l_begin), xmax=hz2thz(freq_l_end), linestyles='dotted',
                colors=color_l)
 
     # Plot for C+L+S
@@ -424,25 +424,25 @@ def plot_gsnr():
     gsnr_c_cls = [gsnr for i, gsnr in enumerate(data_cls[1]) if len(freq_c) <= i < (2 * len(freq_c))]
     gsnr_s_cls = [gsnr for i, gsnr in enumerate(data_cls[1]) if i >= (2 * len(freq_c))]
 
-    h, = plt.plot(freq_l / 1E12, gsnr_l_cls, '.', marker=marker_cls, c=color_l, markersize=marker_size,
+    h, = plt.plot(hz2thz(freq_l), gsnr_l_cls, '.', marker=marker_cls, c=color_l, markersize=marker_size,
                   label=(name + ' Band GSNR'))
-    plt.plot(freq_c / 1E12, gsnr_c_cls, '.', marker=marker_cls, c=color_c, markersize=marker_size)
-    plt.plot(freq_s / 1E12, gsnr_s_cls, '.', marker=marker_cls, c=color_s, markersize=marker_size)
+    plt.plot(hz2thz(freq_c), gsnr_c_cls, '.', marker=marker_cls, c=color_c, markersize=marker_size)
+    plt.plot(hz2thz(freq_s), gsnr_s_cls, '.', marker=marker_cls, c=color_s, markersize=marker_size)
     handles.append(copy.copy(h))
-    plt.axvline(x=freq_s_begin / 1e12, color=color_s)
+    plt.axvline(x=hz2thz(freq_s_begin), color=color_s)
     plt.axvline(x=freq_s_end / 1e12, color=color_s)
-    plt.hlines(y=np.mean(gsnr_c_cls), xmin=freq_c_begin / 1e12, xmax=freq_c_end / 1e12, linestyles='solid',
+    plt.hlines(y=np.mean(gsnr_c_cls), xmin=hz2thz(freq_c_begin), xmax=hz2thz(freq_c_end), linestyles='solid',
                colors=color_c)
-    plt.hlines(y=np.mean(gsnr_l_cls), xmin=freq_l_begin / 1e12, xmax=freq_l_end / 1e12, linestyles='solid',
+    plt.hlines(y=np.mean(gsnr_l_cls), xmin=hz2thz(freq_l_begin), xmax=hz2thz(freq_l_end), linestyles='solid',
                colors=color_l)
-    plt.hlines(y=np.mean(gsnr_s_cls), xmin=freq_s_begin / 1e12, xmax=freq_s_end / 1e12, linestyles='solid',
+    plt.hlines(y=np.mean(gsnr_s_cls), xmin=hz2thz(freq_s_begin), xmax=hz2thz(freq_s_end), linestyles='solid',
                colors=color_s)
 
-    ax.text((np.mean(freq_c) / 1e12) - 1.2, 28, 'C-Band', fontsize=18, color=color_c,
+    ax.text((hz2thz(np.mean(freq_c))) - 1.2, 28, 'C-Band', fontsize=18, color=color_c,
             bbox=dict(facecolor='white', edgecolor=color_c))
-    ax.text((np.mean(freq_l) / 1e12) - 1.2, 28, 'L-Band', fontsize=18, color=color_l,
+    ax.text((hz2thz(np.mean(freq_l))) - 1.2, 28, 'L-Band', fontsize=18, color=color_l,
             bbox=dict(facecolor='white', edgecolor=color_l))
-    ax.text((np.mean(freq_s) / 1e12) - 1.2, 28, 'S-Band', fontsize=18, color=color_s,
+    ax.text((hz2thz(np.mean(freq_s))) - 1.2, 28, 'S-Band', fontsize=18, color=color_s,
             bbox=dict(facecolor='white', edgecolor=color_s))
 
     plt.ylabel('GSNR [dB]', fontsize=18, fontweight='bold')
@@ -491,7 +491,7 @@ def plot_noise_figure_gain(plot_fig=True, save_fig=False):
     plt.rcParams["font.weight"] = "bold"
     plt.rcParams["axes.labelweight"] = "bold"
 
-    # Plots
+    # general_plots
     # plt.plot(freqs_l_band / 1e12, noise_figure_l_band, '.', marker=marker_c, markersize=8, color='red',
     #          label='Noise figure for L-band')
     # plt.plot(freqs_c_band / 1e12, noise_figure_c_band, '.', marker=marker_c, markersize=8, color='blue',

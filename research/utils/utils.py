@@ -31,5 +31,5 @@ def identify_pareto_max(scores: np.array):
     return population_ids[pareto_front]
 
 
-def covnert_hz_thz(array_hz: np.array):
+def hz2thz(array_hz: np.array):
     return array_hz / 1e12
