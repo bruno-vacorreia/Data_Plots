@@ -245,6 +245,26 @@ def calc_average_gsnr():
     np.save(path_data / 'C+L.npy', array)
 
 
+def calc_average_gsnr_opt():
+    # path_data = Path('/mnt/Bruno_Data/GoogleDrive/Material_Academico/PoliTo_WON/Research/Simulations_Data/Results/'
+    #                  'JOCN_Power_Optimization/C_L_S/Future_scenarios_analyze/Old_mat')
+    path_data = Path('/mnt/Bruno_Data/GoogleDrive/Material_Academico/PoliTo_WON/Research/Simulations_Data/Results/'
+                     'JOCN_Power_Optimization/C_L_S/Future_scenarios_analyze/Profiles')
+
+    list_folder = [file for file in os.listdir(path_data)]
+
+    for folder in list_folder:
+        print(folder)
+        list_files = [file for file in os.listdir(path_data / folder)]
+        for file in list_files:
+            data = loadmat(path_data / (folder + '/' + file))
+            gsnr = np.transpose(data['GSNR'])
+
+            print('Name of profile: {}'.format(data['name'][0]))
+            print('Average GSNR: {} dB'.format(np.mean(lin2db(gsnr))))
+        print('\n')
+
+
 def get_noise_figures_average():
     noise_fig_path = Path('/mnt/Bruno_Data/GoogleDrive/Material_Academico/PoliTo_WON/Research/OpticalSystemInterface/'
                           'resources/power_optimization/input_data/noise_figures')
@@ -258,4 +278,4 @@ def get_noise_figures_average():
 
 
 if __name__ == "__main__":
-    get_noise_figures_average()
+    calc_average_gsnr_opt()

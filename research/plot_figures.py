@@ -10,6 +10,7 @@ from pathlib import Path
 from gnpy.core.utils import lin2db
 from research.utils.utils import identify_pareto_max, hz2thz
 
+# Plot color configuration
 sns.set(color_codes=True)
 sns.set(palette="deep", font_scale=1.1, color_codes=True, rc={"figure.figsize": [8, 5]})
 
@@ -116,6 +117,42 @@ def compare_data():
             plt.savefig((figures_path / 'Ase.png'), bbox_inches='tight')
 
     plt.show()
+
+
+def compare_raman(save_figures=False, plot_figures=False):
+    default_path = Path('/mnt/Bruno_Data/GoogleDrive/Material_Academico/PoliTo_WON/Research/Simulations_Data/'
+                        'Compare_Raman')
+    new_path = default_path / 'New_Raman'
+    old_path = default_path / 'Old_Raman'
+    figures_path = default_path / 'Figures'
+    if not os.path.isdir(figures_path):
+        os.makedirs(figures_path)
+
+    list_files_new = [name for name in os.listdir(new_path) if not name.endswith('.json')]
+    list_files_old = [name for name in os.listdir(old_path) if not name.endswith('.json')]
+    assert list_files_new == list_files_old, 'Different files in folder to compare'
+
+    for file in list_files_new:
+        data_new = loadmat(new_path / file)
+        data_old = loadmat(old_path / file)
+
+        plt.figure()
+        plt.plot(hz2thz(data_new['frequencies'][0]), lin2db(data_new['GSNR'][0]), 'b.', label='GSNR new')
+        plt.plot(hz2thz(data_new['frequencies'][0]), lin2db(data_new['SNR_NL'][0]), 'b.', label='SNR_nl new')
+        plt.plot(hz2thz(data_new['frequencies'][0]), lin2db(data_new['OSNR'][0]), 'b.', label='OSNR new')
+        plt.plot(hz2thz(data_old['frequencies'][0]), lin2db(data_old['GSNR'][0]), 'r.', label='GSNR old')
+        plt.plot(hz2thz(data_old['frequencies'][0]), lin2db(data_old['SNR_NL'][0]), 'r.', label='SNR_nl old')
+        plt.plot(hz2thz(data_old['frequencies'][0]), lin2db(data_old['OSNR'][0]), 'r.', label='OSNR old')
+        # plt.title('New raman', fontsize=20)
+        plt.ylabel('Power ratio (dB)', fontsize=14)
+        plt.xlabel('Frequencies (GHz)', fontsize=14)
+        plt.legend()
+        plt.tight_layout()
+        if save_figures:
+            plt.savefig((figures_path / '{}_Comp_Raman.png'.format(file)), bbox_inches='tight')
+
+        plt.cla()
+        plt.clf()
 
 
 def plot_freq_gsnr(data_path, name, figure_path=None, save_fig=False, plot_fig=False, option=2):
@@ -344,7 +381,7 @@ def plot_alloc_traffic_optimization(plot_figs=True, save_figs=False):
     plt.xlabel('Total Allocated traffic [Tbps]', fontsize=18, fontweight='bold')
     plt.yscale('log')
     plt.ylim(1e-4, 2e-1)
-    plt.xlim(400, 1100)
+    plt.xlim(200, 1300)
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
     plt.legend(fontsize=11)
@@ -358,7 +395,7 @@ def plot_alloc_traffic_optimization(plot_figs=True, save_figs=False):
         plt.show()
 
 
-def plot_gsnr():
+def plot_gsnr(plot_figs=True, save_figs=False):
     """
     Plot of GSNR for channels computed per band, loading from a .npy file
     """
@@ -385,6 +422,7 @@ def plot_gsnr():
     freq_c_end = 196.10e12
     gsnr_c = data_c[1]
 
+    # Lines for C-band
     h, = plt.plot(hz2thz(freq_c), gsnr_c, '.', marker=marker_c, c=color_c, markersize=marker_size,
                   label=(name + ' Band GSNR'))
     handles.append(copy.copy(h))
@@ -406,6 +444,7 @@ def plot_gsnr():
     h, = plt.plot(hz2thz(freq_l), gsnr_l_cl, '.', marker=marker_cl, c=color_l, markersize=marker_size,
                   label=(name + ' Band GSNR'))
     plt.plot(hz2thz(freq_c), gsnr_c_cl, '.', marker=marker_cl, c=color_c, markersize=marker_size)
+    # Lines for L-band
     handles.append(copy.copy(h))
     plt.axvline(x=hz2thz(freq_l_begin), color=color_l)
     plt.axvline(x=hz2thz(freq_l_end), color=color_l)
@@ -428,6 +467,7 @@ def plot_gsnr():
                   label=(name + ' Band GSNR'))
     plt.plot(hz2thz(freq_c), gsnr_c_cls, '.', marker=marker_cls, c=color_c, markersize=marker_size)
     plt.plot(hz2thz(freq_s), gsnr_s_cls, '.', marker=marker_cls, c=color_s, markersize=marker_size)
+    # Lines for S-band
     handles.append(copy.copy(h))
     plt.axvline(x=hz2thz(freq_s_begin), color=color_s)
     plt.axvline(x=freq_s_end / 1e12, color=color_s)
@@ -458,10 +498,12 @@ def plot_gsnr():
     leg = plt.legend(handles=handles, fontsize=18)
 
     plt.tight_layout()
-    # plt.savefig((path_data / 'GSNR.png'), bbox_inches='tight', dpi=600)
-    # plt.savefig((path_data / 'GSNR.pdf'), bbox_inches='tight', dpi=600)
+    if save_figs:
+        plt.savefig((path_data / 'GSNR.png'), bbox_inches='tight', dpi=600)
+        plt.savefig((path_data / 'GSNR.pdf'), bbox_inches='tight', dpi=600)
 
-    plt.show()
+    if plot_figs:
+        plt.show()
 
 
 def plot_noise_figure_gain(plot_fig=True, save_fig=False):
@@ -496,7 +538,7 @@ def plot_noise_figure_gain(plot_fig=True, save_fig=False):
     #          label='Noise figure for L-band')
     # plt.plot(freqs_c_band / 1e12, noise_figure_c_band, '.', marker=marker_c, markersize=8, color='blue',
     #          label='Noise figure for C-band')
-    plt.plot(freqs_s_band / 1e12, noise_figure_s_band, '.', marker=marker_c, markersize=8, color='green',
+    plt.plot(hz2thz(freqs_s_band), noise_figure_s_band, '.', marker=marker_c, markersize=8, color='green',
              label='Noise figure for S-band')
 
     # Plot configurations
@@ -514,5 +556,84 @@ def plot_noise_figure_gain(plot_fig=True, save_fig=False):
     plt.show()
 
 
+def plot_traffic(bp_thr=1e-2, plot_fig=True, save_fig=False):
+    path_data = Path('/mnt/Bruno_Data/GoogleDrive/Material_Academico/PoliTo_WON/Research/Simulations_Data/Results/'
+                     'JOCN_Power_Optimization/C_L_S/Future_scenarios_analyze/Allocated_traffic')
+
+    list_folders = [file for file in os.listdir(path_data) if os.path.isdir(path_data / file)]
+
+    plot = {}
+    for folder in list_folders:
+        file = [file for file in os.listdir(path_data / folder) if file.endswith('.mat')][0]
+        mat_data = loadmat(path_data / (folder + '/' + file))
+        average_accept_req = np.transpose(mat_data['cell_averageCumAcceptDemands'][0][0])
+        norm_traffic_band = np.transpose(mat_data['cell_norm_traffic_band'][0][0])
+        norm_traffic_lambda = np.transpose(mat_data['cell_norm_traffic_lambda'][0][0])
+        prob_reject = np.transpose(mat_data['cell_probReject'][0][0])
+        total_acc_traffic = np.transpose(mat_data['cell_totalAcceptedTraffic'][0][0])
+
+        index = 0
+        for i, bp in enumerate(prob_reject):
+            if bp >= bp_thr:
+                index = i
+                break
+        plot[folder] = {'Alloc_traffic': total_acc_traffic[index][0]}
+
+    opt_c, opt_cl, opt_cls = [], [], []
+    for key in plot.keys():
+        if '(Opt C)' in key:
+            opt_c.append(plot[key]['Alloc_traffic'])
+        elif '(Opt C+L)' in key:
+            opt_cl.append(plot[key]['Alloc_traffic'])
+        elif '(Opt C+L+S)' in key:
+            opt_cls.append(plot[key]['Alloc_traffic'])
+    opt_c.sort()
+    opt_cl.sort()
+    opt_cls.sort()
+    x_labels = ['C', 'C+L', 'C+L+S']
+    x = np.arange(len(x_labels))
+
+    print('Opt C:')
+    for tra in opt_c:
+        print('Allocated traffic [Tbps] for BP={}: {}'.format(bp_thr, tra))
+
+    print('Opt C+L:')
+    for tra in opt_cl:
+        print('Allocated traffic [Tbps] for BP={}: {}'.format(bp_thr, tra))
+
+    print('Opt C+L+S:')
+    for tra in opt_cls:
+        print('Allocated traffic [Tbps] for BP={}: {}'.format(bp_thr, tra))
+
+    bar_width = 0.1
+    opacity = 0.8
+    desl = bar_width
+
+    # Bold for all labels, legends...
+    plt.rcParams["font.weight"] = "bold"
+    plt.rcParams["axes.labelweight"] = "bold"
+
+    plt.figure(figsize=(8, 4))
+    plt.bar(x - desl, opt_c, width=bar_width, color='blue', label='Opt C', alpha=opacity)
+    plt.bar(x, opt_cl, width=bar_width, color='orange', label='Opt C+L', alpha=opacity)
+    plt.bar(x + desl, opt_cls, width=bar_width, color='green', label='Opt C+L+S', alpha=opacity)
+
+    plt.grid(zorder=1, alpha=0.4, ls='dashed', axis='y', which='both')
+    plt.legend()
+    plt.xlabel('Spectral bands used', fontsize=18, fontweight='bold')
+    plt.ylabel('Allocated traffic [Tbps]', fontsize=18, fontweight='bold')
+    plt.xticks(x, x_labels)
+    plt.tight_layout()
+
+    if save_fig:
+        plt.savefig((path_data / 'Bands_AllocTraffic.png'), bbox_inches='tight', dpi=600)
+        plt.savefig((path_data / 'Bands_AllocTraffic.pdf'), bbox_inches='tight', dpi=600)
+
+    if plot_fig:
+        plt.show()
+
+
 if __name__ == "__main__":
-    plot_gsnr()
+    # plot_alloc_traffic_optimization(plot_figs=True, save_figs=True)
+    # plot_traffic(bp_thr=1e-2, plot_fig=False, save_fig=True)
+    compare_raman(save_figures=True, plot_figures=True)
