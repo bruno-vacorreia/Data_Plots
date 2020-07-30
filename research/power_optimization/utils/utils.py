@@ -39,10 +39,12 @@ def hz2thz(array_hz):
 
 
 def lin2dbm(value):
+    """Convert linear to dBm"""
     return lin2db(value) + 30
 
 
 def get_interval(x, y, y_min, y_max):
+    """Function to get the interval of x and y, given threshold values of y axis"""
     x_new, y_new = [], []
     for i in range(0, len(y)-1):
         if y[i+1] >= y_min and y[i] <= y_max:
@@ -55,6 +57,7 @@ def get_interval(x, y, y_min, y_max):
 
 
 def smooth_curve(x, y, poly=3, div=2):
+    """Function to smooth a curve (Used in allocated traffic plots)"""
     x_new = x
     y_new = np.ravel(y)
 
