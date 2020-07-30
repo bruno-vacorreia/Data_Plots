@@ -1,5 +1,7 @@
 from tqdm import tqdm
 import numpy as np
+from scipy.signal import savgol_filter
+from gnpy.core.utils import lin2db
 
 
 def identify_pareto_max(scores: np.array):
@@ -31,5 +33,36 @@ def identify_pareto_max(scores: np.array):
     return population_ids[pareto_front]
 
 
-def hz2thz(array_hz: np.array):
-    return array_hz / 1e12
+def hz2thz(array_hz):
+    """Convert Hz to THz"""
+    return np.array(array_hz) / 1e12
+
+
+def lin2dbm(value):
+    return lin2db(value) + 30
+
+
+def get_interval(x, y, y_min, y_max):
+    x_new, y_new = [], []
+    for i in range(0, len(y)-1):
+        if y[i+1] >= y_min and y[i] <= y_max:
+            y_new.append(y[i])
+            x_new.append(x[i])
+    x_new = np.array(x_new)
+    y_new = np.array(y_new)
+
+    return x_new, y_new
+
+
+def smooth_curve(x, y, poly=3, div=2):
+    x_new = x
+    y_new = np.ravel(y)
+
+    # Get odd value for window
+    if (round(len(y_new)/div) % 2) == 0:
+        window = round(len(y_new)/div) - 1
+    else:
+        window = round(len(y_new)/div)
+    y_new = savgol_filter(x=y_new, window_length=window, polyorder=poly, mode='interp')
+
+    return x_new, y_new

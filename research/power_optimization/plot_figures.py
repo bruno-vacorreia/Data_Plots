@@ -8,7 +8,9 @@ from matplotlib import pyplot as plt
 from scipy.io import loadmat
 from pathlib import Path
 from gnpy.core.utils import lin2db
-from research.utils.utils import identify_pareto_max, hz2thz
+import research.power_optimization.utils.utils as utils
+from research.power_optimization.data import DataTraffic, DataQot
+
 
 # Plot color configuration
 sns.set(color_codes=True)
@@ -43,9 +45,9 @@ def compare_data():
     # GSNR, SNR_nl and OSNR
     if plot_gsnr:
         plt.figure(1)
-        plt.plot(hz2thz(new_sim['frequencies'][0]), lin2db(new_sim['GSNR'][0]), 'b.', label='GSNR')
-        plt.plot(hz2thz(new_sim['frequencies'][0]), lin2db(new_sim['SNR_NL'][0]), 'g.', label='SNR_nl')
-        plt.plot(hz2thz(new_sim['frequencies'][0]), lin2db(new_sim['OSNR'][0]), 'r.', label='OSNR')
+        plt.plot(utils.hz2thz(new_sim['frequencies'][0]), lin2db(new_sim['GSNR'][0]), 'b.', label='GSNR')
+        plt.plot(utils.hz2thz(new_sim['frequencies'][0]), lin2db(new_sim['SNR_NL'][0]), 'g.', label='SNR_nl')
+        plt.plot(utils.hz2thz(new_sim['frequencies'][0]), lin2db(new_sim['OSNR'][0]), 'r.', label='OSNR')
         plt.title('C+L+S - Single span', fontsize=20)
         plt.ylabel('Power ratio (dB)', fontsize=14)
         plt.xlabel('Frequencies (GHz)', fontsize=14)
@@ -119,86 +121,81 @@ def compare_data():
     plt.show()
 
 
-def compare_raman(save_figures=False, plot_figures=False):
-    default_path = Path('/mnt/Bruno_Data/GoogleDrive/Material_Academico/PoliTo_WON/Research/Simulations_Data/'
-                        'Compare_Raman')
-    new_path = default_path / 'New_Raman'
-    old_path = default_path / 'Old_Raman'
-    figures_path = default_path / 'Figures'
-    if not os.path.isdir(figures_path):
-        os.makedirs(figures_path)
+def plot_freq_gsnr(data_path, name=None, figure_path=None, save_fig=False, plot_fig=False):
+    data = DataQot.load_qot_mat(data_path)
 
-    list_files_new = [name for name in os.listdir(new_path) if not name.endswith('.json')]
-    list_files_old = [name for name in os.listdir(old_path) if not name.endswith('.json')]
-    assert list_files_new == list_files_old, 'Different files in folder to compare'
+    # Bold for all labels, legends...
+    plt.rcParams["font.weight"] = "bold"
+    plt.rcParams["axes.labelweight"] = "bold"
 
-    for file in list_files_new:
-        data_new = loadmat(new_path / file)
-        data_old = loadmat(old_path / file)
+    plt.figure()
+    plt.plot(utils.hz2thz(data.frequencies), lin2db(data.gsnr), 'b.', label='GSNR')
+    plt.plot(utils.hz2thz(data.frequencies), lin2db(data.snr_nl), 'g.', label='SNR_nl')
+    plt.plot(utils.hz2thz(data.frequencies), lin2db(data.osnr), 'r.', label='OSNR')
 
-        plt.figure()
-        plt.plot(hz2thz(data_new['frequencies'][0]), lin2db(data_new['GSNR'][0]), 'b.', label='GSNR new')
-        plt.plot(hz2thz(data_new['frequencies'][0]), lin2db(data_new['SNR_NL'][0]), 'b.', label='SNR_nl new')
-        plt.plot(hz2thz(data_new['frequencies'][0]), lin2db(data_new['OSNR'][0]), 'b.', label='OSNR new')
-        plt.plot(hz2thz(data_old['frequencies'][0]), lin2db(data_old['GSNR'][0]), 'r.', label='GSNR old')
-        plt.plot(hz2thz(data_old['frequencies'][0]), lin2db(data_old['SNR_NL'][0]), 'r.', label='SNR_nl old')
-        plt.plot(hz2thz(data_old['frequencies'][0]), lin2db(data_old['OSNR'][0]), 'r.', label='OSNR old')
-        # plt.title('New raman', fontsize=20)
-        plt.ylabel('Power ratio (dB)', fontsize=14)
-        plt.xlabel('Frequencies (GHz)', fontsize=14)
-        plt.legend()
-        plt.tight_layout()
-        if save_figures:
-            plt.savefig((figures_path / '{}_Comp_Raman.png'.format(file)), bbox_inches='tight')
-
-        plt.cla()
-        plt.clf()
-
-
-def plot_freq_gsnr(data_path, name, figure_path=None, save_fig=False, plot_fig=False, option=2):
-    data = loadmat(data_path)
-    key_gsnr, key_snr_li = None, None
-    if option == 2:
-        key_gsnr, key_snr_li = 'GSNR_2', 'SNR_NL_2'
-        if key_gsnr not in data.keys() or key_snr_li not in data.keys():
-            print('Invalid option. Using regular GSNR and SNR_nl')
-            key_gsnr, key_snr_li = 'GSNR', 'SNR_NL'
-    elif option == 1:
-        key_gsnr, key_snr_li = 'GSNR', 'SNR_NL'
-    else:
-        print('Invalid option')
-        exit()
-
-    plt.figure(1)
-    plt.plot(data['frequencies'][0] / 1e12, lin2db(data[key_gsnr][0]), 'b.', label='GSNR')
-    plt.plot(data['frequencies'][0] / 1e12, lin2db(data[key_snr_li][0]), 'g.', label='SNR_nl')
-    plt.plot(data['frequencies'][0] / 1e12, lin2db(data['OSNR'][0]), 'r.', label='OSNR')
-    plt.title('C+L+S - {}'.format(name), fontsize=20)
     plt.ylabel('Power ratio (dB)', fontsize=14)
     plt.xlabel('Frequencies (THz)', fontsize=14)
-    plt.legend()
+    plt.legend(fontsize=11)
     plt.tight_layout()
 
-    if save_fig:
-        plt.savefig((figure_path / '{}.png'.format(name)), bbox_inches='tight')
+    if save_fig and figure_path:
+        if not os.path.isdir(figure_path):
+            os.makedirs(figure_path)
+        if not name:
+            name = data.name
         plt.savefig((figure_path / '{}.pdf'.format(name)), bbox_inches='tight')
 
     if plot_fig:
         plt.show()
 
+    plt.clf()
+    plt.close()
 
-def plot_bp_traffic():
-    pass
+
+def plot_freq_powers(data_path, name=None, figure_path=None, save_fig=False, plot_fig=False):
+    data = DataQot.load_qot_mat(data_path)
+
+    # Bold for all labels, legends...
+    plt.rcParams["font.weight"] = "bold"
+    plt.rcParams["axes.labelweight"] = "bold"
+
+    plt.figure()
+    plt.plot(utils.hz2thz(data.frequencies), utils.lin2dbm(data.powers), 'b.', label='Powers')
+
+    plt.ylabel('Power (dBm)', fontsize=14)
+    plt.xlabel('Frequencies (THz)', fontsize=14)
+    plt.legend(fontsize=11)
+    plt.tight_layout()
+
+    if save_fig and figure_path:
+        if not os.path.isdir(figure_path):
+            os.makedirs(figure_path)
+        if not name:
+            name = data.name
+        plt.savefig((figure_path / '{}.pdf'.format(name)), bbox_inches='tight')
+
+    if plot_fig:
+        plt.show()
+
+    plt.clf()
+    plt.close()
 
 
-def plot_best_combinations(data_path, best_combinations, save_figs=False, plot_figs=True):
-    figures_path = data_path / 'Figures'
+def plot_best_combinations(data_path, best_combinations, output_folder=None, save_figs=False, plot_figs=True):
+    if not output_folder:
+        output_folder = data_path
+    figures_path = output_folder / 'Figures/GSNR_Profiles'
     if not os.path.isdir(figures_path):
         os.makedirs(figures_path)
 
     for best in best_combinations:
-        plot_freq_gsnr((data_path / (best_combinations[best] + '.mat')), best, figure_path=figures_path,
-                       save_fig=save_figs, plot_fig=plot_figs, option=2)
+        name_file = ''
+        if isinstance(best_combinations, dict):
+            name_file = best_combinations[best]
+        elif isinstance(best_combinations, list):
+            name_file = best
+        plot_freq_gsnr((data_path / (name_file + '.mat')), name_file, figure_path=figures_path, save_fig=save_figs,
+                       plot_fig=plot_figs)
 
 
 def compute_pareto_front(save_figs=False, plot_figs=True):
@@ -249,7 +246,7 @@ def compute_pareto_front(save_figs=False, plot_figs=True):
     # np.save(pareto_folder / 'Pareto.npy', population)
     population = np.load(pareto_folder / 'Pareto.npy')
 
-    pareto = identify_pareto_max(population)
+    pareto = utils.identify_pareto_max(population)
     print('Indices of non-dominated solutions:\n{}'.format(pareto))
     pop_pareto = population[pareto]
     # names_pareto = [names[index] for index in pareto]
@@ -288,13 +285,27 @@ def compute_pareto_front(save_figs=False, plot_figs=True):
         plt.show()
 
 
-def plot_alloc_traffic(plot_figs=True, save_figs=False):
-    path_data = Path('/mnt/Bruno_Data/GoogleDrive/Material_Academico/PoliTo_WON/Research/Simulations_Data/Results/'
-                     'JOCN_Power_Optimization/C_L_S/Allocated_traffic/Allocated_traffic_Plot/DT_uniform')
+def plot_alloc_traffic(path_data, plot_figs=True, save_figs=False, smooth_plot=False):
+    # Y axis limits (BP)
+    y_min = 1e-4
+    y_max = 1e-1
+
+    # Dictionary
+    format_dict = {
+        'Reference C Band (1x fiber)': 'k',
+        'BDM C+L Band (1x fiber)': 'b-',
+        'BDM C+L+S Band (1x fiber)': 'b--',
+        'SDM-CCC C Band (2x fibers)': 'g-',
+        'SDM-CCC C Band (3x fibers)': 'g--',
+        'SDM-InS C Band (2x fibers)': 'r-',
+        'SDM-InS C Band (3x fibers)': 'r--'
+    }
 
     # for folder in list_folders:
     list_curves = []
-    topology_traffic_path = path_data
+    topology_traffic_path = path_data / 'Figures'
+    if not os.path.isdir(topology_traffic_path):
+        os.makedirs(topology_traffic_path)
     list_sub_folders = [file for file in os.listdir(path_data)
                         if os.path.isdir(path_data / file)]
     index_ref = [i for i, file in enumerate(list_sub_folders) if 'Reference' in file][0]
@@ -304,20 +315,11 @@ def plot_alloc_traffic(plot_figs=True, save_figs=False):
 
     # Save all curves for a topology/Traffic
     for sub_folder in list_sub_folders:
-        name = sub_folder
         mat_file = [file for file in os.listdir(path_data / sub_folder) if file.endswith('.mat')]
-        mat_path = (path_data / (sub_folder + '/' + mat_file[0]))
-
-        mat_data = loadmat(mat_path)
-        average_accept_req = np.transpose(mat_data['cell_averageCumAcceptDemands'][0][0])
-        norm_traffic_band = np.transpose(mat_data['cell_norm_traffic_band'][0][0])
-        norm_traffic_lambda = np.transpose(mat_data['cell_norm_traffic_lambda'][0][0])
-        prob_reject = np.transpose(mat_data['cell_probReject'][0][0])
-        total_acc_traffic = np.transpose(mat_data['cell_totalAcceptedTraffic'][0][0])
-        data = {'Name': name, 'Av_acc_req': average_accept_req, 'Norm_tra_band': norm_traffic_band,
-                'Norm_tra_lambda': norm_traffic_lambda, 'Prob_reject': prob_reject,
-                'Tot_acc_tra': total_acc_traffic}
-        list_curves.append(data)
+        if mat_file:
+            mat_path = (path_data / (sub_folder + '/' + mat_file[0]))
+            data = DataTraffic.load_traffic_mat(path=mat_path, name=sub_folder)
+            list_curves.append(data)
 
     # Bold for all labels, legends...
     plt.rcParams["font.weight"] = "bold"
@@ -326,18 +328,24 @@ def plot_alloc_traffic(plot_figs=True, save_figs=False):
     # Configuration for allocated traffic
     plt.figure(figsize=(8, 4))
     for curve in list_curves:
-        plt.plot(curve['Tot_acc_tra'], curve['Prob_reject'], label=curve['Name'], linewidth=2)
+        if smooth_plot:
+            x, y = utils.get_interval(curve.total_acc_traffic, curve.prob_rejected, y_min, y_max)
+            x, y = utils.smooth_curve(x, y, poly=3, div=2.0)
+            plt.plot(x, y, format_dict[curve.name], label=curve.name, linewidth=2.0)
+        else:
+            plt.plot(curve.total_acc_traffic, curve.prob_rejected, label=curve.name, linewidth=2)
     plt.ylabel('Blocking probability', fontsize=18, fontweight='bold')
     plt.xlabel('Total Allocated traffic [Tbps]', fontsize=18, fontweight='bold')
     plt.yscale('log')
-    plt.ylim(1e-4, 2e-1)
-    plt.xlim(300, 2100)
+    plt.ylim(y_min, y_max)
+    plt.xlim(200, 1500)
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
-    plt.legend(fontsize=11)
+    # plt.legend(fontsize=11)
+    plt.grid(b=True, which='minor', linestyle='-.', linewidth=0.5)
+    plt.grid(b=True, which='major', linestyle='-', linewidth=1.0)
     plt.tight_layout()
     if save_figs:
-        plt.savefig((topology_traffic_path / 'AllocTraffic_BP.png'), bbox_inches='tight', dpi=600)
         plt.savefig((topology_traffic_path / 'AllocTraffic_BP.pdf'), bbox_inches='tight', dpi=600)
     if plot_figs:
         plt.show()
@@ -353,20 +361,10 @@ def plot_alloc_traffic_optimization(plot_figs=True, save_figs=False):
 
     # Save all curves for a topology/Traffic
     for sub_folder in list_sub_folders:
-        name = sub_folder
         mat_file = [file for file in os.listdir(path_data / sub_folder) if file.endswith('.mat')]
         mat_file = mat_file[0]
         mat_path = (path_data / (sub_folder + '/' + mat_file))
-
-        mat_data = loadmat(mat_path)
-        average_accept_req = np.transpose(mat_data['cell_averageCumAcceptDemands'][0][0])
-        norm_traffic_band = np.transpose(mat_data['cell_norm_traffic_band'][0][0])
-        norm_traffic_lambda = np.transpose(mat_data['cell_norm_traffic_lambda'][0][0])
-        prob_reject = np.transpose(mat_data['cell_probReject'][0][0])
-        total_acc_traffic = np.transpose(mat_data['cell_totalAcceptedTraffic'][0][0])
-        data = {'Name': name, 'Av_acc_req': average_accept_req, 'Norm_tra_band': norm_traffic_band,
-                'Norm_tra_lambda': norm_traffic_lambda, 'Prob_reject': prob_reject,
-                'Tot_acc_tra': total_acc_traffic}
+        data = DataTraffic.load_traffic_mat(path=mat_path, name=sub_folder)
         list_curves.append(data)
 
     # Bold for all labels, legends...
@@ -376,7 +374,7 @@ def plot_alloc_traffic_optimization(plot_figs=True, save_figs=False):
     # Configuration for allocated traffic
     plt.figure(figsize=(8, 4))
     for curve in list_curves:
-        plt.plot(curve['Tot_acc_tra'], curve['Prob_reject'], label=curve['Name'], linewidth=2)
+        plt.plot(curve.total_acc_traffic, curve.prob_rejected, label=curve.name, linewidth=2)
     plt.ylabel('Blocking probability', fontsize=18, fontweight='bold')
     plt.xlabel('Total Allocated traffic [Tbps]', fontsize=18, fontweight='bold')
     plt.yscale('log')
@@ -423,12 +421,12 @@ def plot_gsnr(plot_figs=True, save_figs=False):
     gsnr_c = data_c[1]
 
     # Lines for C-band
-    h, = plt.plot(hz2thz(freq_c), gsnr_c, '.', marker=marker_c, c=color_c, markersize=marker_size,
+    h, = plt.plot(utils.hz2thz(freq_c), gsnr_c, '.', marker=marker_c, c=color_c, markersize=marker_size,
                   label=(name + ' Band GSNR'))
     handles.append(copy.copy(h))
-    plt.axvline(x=hz2thz(freq_c_begin), color=color_c)
-    plt.axvline(x=hz2thz(freq_c_end), color=color_c)
-    plt.hlines(y=np.mean(gsnr_c), xmin=hz2thz(freq_c_begin), xmax=hz2thz(freq_c_end), linestyles='dashdot',
+    plt.axvline(x=utils.hz2thz(freq_c_begin), color=color_c)
+    plt.axvline(x=utils.hz2thz(freq_c_end), color=color_c)
+    plt.hlines(y=np.mean(gsnr_c), xmin=utils.hz2thz(freq_c_begin), xmax=utils.hz2thz(freq_c_end), linestyles='dashdot',
                colors=color_c)
 
     # Plot for C+L
@@ -441,17 +439,17 @@ def plot_gsnr(plot_figs=True, save_figs=False):
     gsnr_l_cl = [gsnr for i, gsnr in enumerate(data_cl[1]) if i < len(freq_c)]
     gsnr_c_cl = [gsnr for i, gsnr in enumerate(data_cl[1]) if i >= len(freq_c)]
 
-    h, = plt.plot(hz2thz(freq_l), gsnr_l_cl, '.', marker=marker_cl, c=color_l, markersize=marker_size,
+    h, = plt.plot(utils.hz2thz(freq_l), gsnr_l_cl, '.', marker=marker_cl, c=color_l, markersize=marker_size,
                   label=(name + ' Band GSNR'))
-    plt.plot(hz2thz(freq_c), gsnr_c_cl, '.', marker=marker_cl, c=color_c, markersize=marker_size)
+    plt.plot(utils.hz2thz(freq_c), gsnr_c_cl, '.', marker=marker_cl, c=color_c, markersize=marker_size)
     # Lines for L-band
     handles.append(copy.copy(h))
-    plt.axvline(x=hz2thz(freq_l_begin), color=color_l)
-    plt.axvline(x=hz2thz(freq_l_end), color=color_l)
-    plt.hlines(y=np.mean(gsnr_c_cl), xmin=hz2thz(freq_c_begin), xmax=hz2thz(freq_c_end), linestyles='dotted',
-               colors=color_c)
-    plt.hlines(y=np.mean(gsnr_l_cl), xmin=hz2thz(freq_l_begin), xmax=hz2thz(freq_l_end), linestyles='dotted',
-               colors=color_l)
+    plt.axvline(x=utils.hz2thz(freq_l_begin), color=color_l)
+    plt.axvline(x=utils.hz2thz(freq_l_end), color=color_l)
+    plt.hlines(y=np.mean(gsnr_c_cl), xmin=utils.hz2thz(freq_c_begin), xmax=utils.hz2thz(freq_c_end),
+               linestyles='dotted', colors=color_c)
+    plt.hlines(y=np.mean(gsnr_l_cl), xmin=utils.hz2thz(freq_l_begin), xmax=utils.hz2thz(freq_l_end),
+               linestyles='dotted', colors=color_l)
 
     # Plot for C+L+S
     name = 'C+L+S'
@@ -463,26 +461,26 @@ def plot_gsnr(plot_figs=True, save_figs=False):
     gsnr_c_cls = [gsnr for i, gsnr in enumerate(data_cls[1]) if len(freq_c) <= i < (2 * len(freq_c))]
     gsnr_s_cls = [gsnr for i, gsnr in enumerate(data_cls[1]) if i >= (2 * len(freq_c))]
 
-    h, = plt.plot(hz2thz(freq_l), gsnr_l_cls, '.', marker=marker_cls, c=color_l, markersize=marker_size,
+    h, = plt.plot(utils.hz2thz(freq_l), gsnr_l_cls, '.', marker=marker_cls, c=color_l, markersize=marker_size,
                   label=(name + ' Band GSNR'))
-    plt.plot(hz2thz(freq_c), gsnr_c_cls, '.', marker=marker_cls, c=color_c, markersize=marker_size)
-    plt.plot(hz2thz(freq_s), gsnr_s_cls, '.', marker=marker_cls, c=color_s, markersize=marker_size)
+    plt.plot(utils.hz2thz(freq_c), gsnr_c_cls, '.', marker=marker_cls, c=color_c, markersize=marker_size)
+    plt.plot(utils.hz2thz(freq_s), gsnr_s_cls, '.', marker=marker_cls, c=color_s, markersize=marker_size)
     # Lines for S-band
     handles.append(copy.copy(h))
-    plt.axvline(x=hz2thz(freq_s_begin), color=color_s)
+    plt.axvline(x=utils.hz2thz(freq_s_begin), color=color_s)
     plt.axvline(x=freq_s_end / 1e12, color=color_s)
-    plt.hlines(y=np.mean(gsnr_c_cls), xmin=hz2thz(freq_c_begin), xmax=hz2thz(freq_c_end), linestyles='solid',
-               colors=color_c)
-    plt.hlines(y=np.mean(gsnr_l_cls), xmin=hz2thz(freq_l_begin), xmax=hz2thz(freq_l_end), linestyles='solid',
-               colors=color_l)
-    plt.hlines(y=np.mean(gsnr_s_cls), xmin=hz2thz(freq_s_begin), xmax=hz2thz(freq_s_end), linestyles='solid',
-               colors=color_s)
+    plt.hlines(y=np.mean(gsnr_c_cls), xmin=utils.hz2thz(freq_c_begin), xmax=utils.hz2thz(freq_c_end),
+               linestyles='solid', colors=color_c)
+    plt.hlines(y=np.mean(gsnr_l_cls), xmin=utils.hz2thz(freq_l_begin), xmax=utils.hz2thz(freq_l_end),
+               linestyles='solid', colors=color_l)
+    plt.hlines(y=np.mean(gsnr_s_cls), xmin=utils.hz2thz(freq_s_begin), xmax=utils.hz2thz(freq_s_end),
+               linestyles='solid', colors=color_s)
 
-    ax.text((hz2thz(np.mean(freq_c))) - 1.2, 28, 'C-Band', fontsize=18, color=color_c,
+    ax.text((utils.hz2thz(np.mean(freq_c))) - 1.2, 28, 'C-Band', fontsize=18, color=color_c,
             bbox=dict(facecolor='white', edgecolor=color_c))
-    ax.text((hz2thz(np.mean(freq_l))) - 1.2, 28, 'L-Band', fontsize=18, color=color_l,
+    ax.text((utils.hz2thz(np.mean(freq_l))) - 1.2, 28, 'L-Band', fontsize=18, color=color_l,
             bbox=dict(facecolor='white', edgecolor=color_l))
-    ax.text((hz2thz(np.mean(freq_s))) - 1.2, 28, 'S-Band', fontsize=18, color=color_s,
+    ax.text((utils.hz2thz(np.mean(freq_s))) - 1.2, 28, 'S-Band', fontsize=18, color=color_s,
             bbox=dict(facecolor='white', edgecolor=color_s))
 
     plt.ylabel('GSNR [dB]', fontsize=18, fontweight='bold')
@@ -538,7 +536,7 @@ def plot_noise_figure_gain(plot_fig=True, save_fig=False):
     #          label='Noise figure for L-band')
     # plt.plot(freqs_c_band / 1e12, noise_figure_c_band, '.', marker=marker_c, markersize=8, color='blue',
     #          label='Noise figure for C-band')
-    plt.plot(hz2thz(freqs_s_band), noise_figure_s_band, '.', marker=marker_c, markersize=8, color='green',
+    plt.plot(utils.hz2thz(freqs_s_band), noise_figure_s_band, '.', marker=marker_c, markersize=8, color='green',
              label='Noise figure for S-band')
 
     # Plot configurations
@@ -634,6 +632,8 @@ def plot_traffic(bp_thr=1e-2, plot_fig=True, save_fig=False):
 
 
 if __name__ == "__main__":
-    # plot_alloc_traffic_optimization(plot_figs=True, save_figs=True)
-    # plot_traffic(bp_thr=1e-2, plot_fig=False, save_fig=True)
-    compare_raman(save_figures=True, plot_figures=True)
+    path = Path('/mnt/Bruno_Data/GoogleDrive/Material_Academico/PoliTo_WON/Research/Simulations_Data/Results/'
+                'JOCN_Power_Optimization/C_L_S/Data_combinations/Data_processed_Sband_96_Regular/results/'
+                'Allocated_traffic/Allocated_traffic_Plot/COST_ununiform')
+
+    plot_alloc_traffic(path, plot_figs=False, save_figs=True, smooth_plot=True)
