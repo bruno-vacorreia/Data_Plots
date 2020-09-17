@@ -4,7 +4,8 @@ from scipy.io import loadmat, savemat
 
 class DataTraffic:
 
-    def __init__(self, name, path, ave_acc_req, norm_traffic_band, norm_traffic_lambda, prob_rej, total_acc_traffic):
+    def __init__(self, name, path, ave_acc_req, norm_traffic_band, norm_traffic_lambda, prob_rej, total_acc_traffic,
+                 bp_thr=1e-2):
         self._name = name
         self._path = path
         self._average_accept_req = ave_acc_req
@@ -12,6 +13,9 @@ class DataTraffic:
         self._norm_traffic_lambda = norm_traffic_lambda
         self._prob_rejected = prob_rej
         self._total_accept_traffic = total_acc_traffic
+        self._thr_bp = bp_thr
+        self._allocated_traffic = None
+        self._multi_factor = None
 
     @property
     def name(self):
@@ -41,8 +45,33 @@ class DataTraffic:
     def total_acc_traffic(self):
         return self._total_accept_traffic
 
+    @property
+    def thr_bp(self):
+        return self._thr_bp
+
+    @thr_bp.setter
+    def thr_bp(self, value):
+        self._thr_bp = value
+
+    @property
+    def alloc_traffic(self):
+        return self._allocated_traffic
+
+    @property
+    def multi_factor(self):
+        return self._multi_factor
+
+    def calc_alloc_traffic(self):
+        for i, bp in enumerate(self.prob_rejected):
+            if bp >= self.thr_bp:
+                self._allocated_traffic = self.total_acc_traffic[i]
+                break
+
+    def calc_multi_factor(self, base_traffic):
+        self._multi_factor = round(self.alloc_traffic / base_traffic, 2)
+
     @staticmethod
-    def load_traffic_mat(path, name=None):
+    def load_traffic_mat(path, name=None, thr_bp=1e-2):
         mat_data = loadmat(path)
         average_accept_req, norm_traffic_band, norm_traffic_lambda, prob_reject, total_acc_traffic = [], [], [], [], []
         try:
@@ -59,7 +88,8 @@ class DataTraffic:
             exit()
 
         data = DataTraffic(name, path, average_accept_req, norm_traffic_band, norm_traffic_lambda, prob_reject,
-                           total_acc_traffic)
+                           total_acc_traffic, thr_bp)
+        data.calc_alloc_traffic()
 
         return data
 
