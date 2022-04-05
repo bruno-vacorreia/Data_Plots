@@ -7,6 +7,8 @@ values = [0.01, 0.5, 3.7, 5.0, 4.2, 2.7, 4.3, 8.3]
 
 value = values.extend(2)
 
+x = [1, 2, 3, 4]
+
 plt.plot(year, pop)                     # Curve
 # plt.scatter(year, pop)                # Points
 # plt.hist(values, bins=3)              # Histogram
